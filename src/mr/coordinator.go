@@ -179,7 +179,10 @@ func (c *Coordinator) Start() {
 	for {
 		select {
 		case assignJob := <-c.assignJobCh:
-			if c.selectTask(assignJob.resp) {
+			if c.phase == CompletedPhase {
+				// add this to ensure switch-case not arrive CompletedPhase
+				assignJob.resp.TaskType = CompletedJob
+			} else if c.selectTask(assignJob.resp) {
 				switch c.phase {
 				case MapPhase:
 					log.Printf("Coordinator: %v finished, %v Start", MapPhase, ReducePhase)
@@ -190,7 +193,7 @@ func (c *Coordinator) Start() {
 					c.initCompletedPhase()
 					assignJob.resp.TaskType = CompletedJob
 				case CompletedPhase:
-					panic("")
+					panic("MapReduce execution is already finished.")
 				}
 			}
 			log.Printf("Coordinator: assign a task %v to a worker \n", assignJob.resp)
